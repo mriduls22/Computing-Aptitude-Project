@@ -1,0 +1,127 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <map>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+// Function to roll a die (1-6)
+int rollDie() {
+    return rand() % 6 + 1;
+}
+
+// Function to check for ladders or snakes
+int checkSpecial(int position, map<int, int>& specials) {
+    if (specials.find(position) != specials.end()) {
+        return specials[position];
+    }
+    return position;
+}
+
+// Function to display the board with player positions
+void displayBoard(const vector<int>& positions, const vector<string>& names, const map<int, int>& specials) {
+    cout << "\nBoard (1-100, L=Ladder, S=Snake, P=Player):\n";
+    for (int row = 10; row >= 1; --row) {
+        for (int col = 1; col <= 10; ++col) {
+            int square = (row - 1) * 10 + col;
+            if (row % 2 == 0) square = row * 10 - col + 1;  // Zigzag for realism
+            
+            char marker = '.';
+            if (specials.find(square) != specials.end()) {
+                marker = (specials.at(square) > square) ? 'L' : 'S';
+            }
+            for (size_t p = 0; p < positions.size(); ++p) {
+                if (positions[p] == square) {
+                    marker = '1' + p;  // Player 1, 2, etc.
+                }
+            }
+            cout << "[" << marker << "] ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+int main() {
+    srand(time(0));
+
+    // Define ladders and snakes
+    map<int, int> specials;
+    // Ladders
+    specials[4] = 14; specials[9] = 31; specials[21] = 42; specials[28] = 84;
+    specials[51] = 67; specials[72] = 91; specials[80] = 99;
+    // Snakes
+    specials[17] = 7; specials[54] = 34; specials[62] = 19; specials[64] = 60;
+    specials[87] = 24; specials[93] = 73; specials[95] = 75; specials[98] = 79;
+
+    cout << "Welcome to Interactive Snakes and Ladders!\n";
+
+    // Get number of players
+    int numPlayers;
+    do {
+        cout << "Enter number of players (2-4): ";
+        cin >> numPlayers;
+    } while (numPlayers < 2 || numPlayers > 4);
+
+    vector<string> names(numPlayers);
+    vector<int> positions(numPlayers, 0);
+    for (int i = 0; i < numPlayers; ++i) {
+        cout << "Enter name for Player " << (i + 1) << ": ";
+        cin >> names[i];
+    }
+
+    displayBoard(positions, names, specials);
+
+    int currentPlayer = 0;
+    while (true) {
+        cout << names[currentPlayer] << "'s turn. Press 1 to roll, 2 to quit: ";
+        int choice;
+        cin >> choice;
+        if (choice == 2) {
+            cout << "Game quit. Thanks for playing!\n";
+            break;
+        }
+
+        cout << "Rolling... ";
+        int roll = rollDie();
+        cout << "Rolled: " << roll << endl;
+
+        int newPos = positions[currentPlayer] + roll;
+        if (newPos > 100) {
+            cout << "Overshot! Stay at " << positions[currentPlayer] << endl;
+        } else {
+            newPos = checkSpecial(newPos, specials);
+            positions[currentPlayer] = newPos;
+            cout << names[currentPlayer] << " moved to " << newPos;
+            if (specials.find(newPos) != specials.end()) {
+                cout << " (via " << ((specials.at(newPos) > newPos) ? "ladder" : "snake") << ")";
+            }
+            cout << "!" << endl;
+        }
+
+        displayBoard(positions, names, specials);
+
+        if (positions[currentPlayer] == 100) {
+            cout << names[currentPlayer] << " wins! Congratulations!\n";
+            cout << "Play again? (y/n): ";
+            char again;
+            cin >> again;
+            if (again == 'y' || again == 'Y') {
+                // Reset positions
+                fill(positions.begin(), positions.end(), 0);
+                currentPlayer = 0;
+                displayBoard(positions, names, specials);
+                continue;
+            } else {
+                break;
+            }
+        }
+
+        // Switch player
+        currentPlayer = (currentPlayer + 1) % numPlayers;
+    }
+
+    return 0;
+}
